@@ -35,9 +35,8 @@ function yAxisFormatter(minutes) {
 
 function CustomTooltip({ active, payload, label, unit }) {
   if (!active || !payload?.length) return null;
-  const distLabel = unit === 'mi'
-    ? `${(label * KM_TO_MILES).toFixed(2)} mi`
-    : `${Number(label).toFixed(2)} km`;
+  // label is already in display unit (dist was converted before charting)
+  const distLabel = `${Number(label).toFixed(unit === 'mi' ? 2 : 1)} ${unit}`;
   return (
     <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm shadow-lg">
       <p className="text-slate-500 text-xs">{distLabel}</p>

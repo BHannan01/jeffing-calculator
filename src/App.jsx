@@ -149,18 +149,21 @@ export default function App() {
     const totalKm = getTotalKm();
     if (!totalKm) { setCalcError('Please enter a valid race distance.'); return; }
 
-    const walkPaceMin = parseTimeToMinutes(walkPace);
-    if (isNaN(walkPaceMin) || walkPaceMin <= 0) {
-      setCalcError('Invalid walk pace. Use MM:SS format, e.g. 10:00.');
-      return;
-    }
-    const walkSpeedKm = paceToSpeedKm(walkPaceMin, unit);
-
     const ri = parseFloat(runInterval);
     const wi = parseFloat(walkInterval);
-    if (isNaN(ri) || ri <= 0 || isNaN(wi) || wi <= 0) {
-      setCalcError('Run and walk interval values must be positive numbers.');
+    if (isNaN(ri) || ri <= 0 || isNaN(wi) || wi < 0) {
+      setCalcError('Run interval must be positive. Walk interval can be 0 for no walking.');
       return;
+    }
+
+    let walkSpeedKm = 0;
+    if (wi > 0) {
+      const walkPaceMin = parseTimeToMinutes(walkPace);
+      if (isNaN(walkPaceMin) || walkPaceMin <= 0) {
+        setCalcError('Invalid walk pace. Use MM:SS format, e.g. 10:00.');
+        return;
+      }
+      walkSpeedKm = paceToSpeedKm(walkPaceMin, unit);
     }
     const riKm = intervalType === 'distance' && unit === 'mi' ? ri * MILES_TO_KM : ri;
     const wiKm = intervalType === 'distance' && unit === 'mi' ? wi * MILES_TO_KM : wi;

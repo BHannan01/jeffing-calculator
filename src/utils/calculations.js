@@ -49,7 +49,9 @@ export function paceToSpeedKm(paceMin, unit) {
 // Speed (km/min) => pace string for display unit
 export function speedToDisplayPace(speedKmMin, unit) {
   if (!speedKmMin || speedKmMin <= 0) return '--:--';
-  const paceMin = unit === 'km' ? 1 / speedKmMin : KM_TO_MILES / speedKmMin;
+  // pace (min/unit) = 1 / speed (unit/min)
+  // speed in miles/min = speedKmMin * KM_TO_MILES, so pace = 1/(speedKmMin * KM_TO_MILES) = MILES_TO_KM / speedKmMin
+  const paceMin = unit === 'km' ? 1 / speedKmMin : MILES_TO_KM / speedKmMin;
   return formatMinutes(paceMin);
 }
 
@@ -92,14 +94,15 @@ function timeAtDistKm(distKm, runSpeedKm, walkSpeedKm, intervalType, runInterval
     // runInterval / walkInterval are in km
     const cycleDist = runInterval + walkInterval;
     if (cycleDist <= 0) return Infinity;
-    const cycleMin = runInterval / runSpeedKm + walkInterval / walkSpeedKm;
+    const walkTime = walkInterval > 0 ? walkInterval / walkSpeedKm : 0;
+    const cycleMin = runInterval / runSpeedKm + walkTime;
 
     const fullCycles = Math.floor(distKm / cycleDist);
     const rem = distKm - fullCycles * cycleDist;
 
     const partial = rem <= runInterval
       ? rem / runSpeedKm
-      : runInterval / runSpeedKm + (rem - runInterval) / walkSpeedKm;
+      : runInterval / runSpeedKm + (walkInterval > 0 ? (rem - runInterval) / walkSpeedKm : 0);
 
     return fullCycles * cycleMin + partial;
   }
@@ -116,7 +119,7 @@ function buildResults(totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterva
     runFraction = runInterval / (runInterval + walkInterval);
   } else {
     const rt = runInterval / runSpeedKm;
-    const wt = walkInterval / walkSpeedKm;
+    const wt = walkInterval > 0 ? walkInterval / walkSpeedKm : 0;
     runFraction = rt / (rt + wt);
   }
 
@@ -148,8 +151,8 @@ export function calcRequiredRunPace({ totalKm, goalMin, walkSpeedKm, intervalTyp
   } else {
     const cycleDist = runInterval + walkInterval;
     const cycleMin = goalMin * cycleDist / totalKm;
-    const walkTime = walkInterval / walkSpeedKm;
-    if (cycleMin <= walkTime) {
+    const walkTime = walkInterval > 0 ? walkInterval / walkSpeedKm : 0;
+    if (walkInterval > 0 && cycleMin <= walkTime) {
       return { error: 'Goal time is faster than walking the full distance. Try a shorter goal time.' };
     }
     runSpeedKm = runInterval / (cycleMin - walkTime);
@@ -158,7 +161,7 @@ export function calcRequiredRunPace({ totalKm, goalMin, walkSpeedKm, intervalTyp
   if (!isFinite(runSpeedKm) || runSpeedKm <= 0) {
     return { error: 'No valid run pace found. Try adjusting your goal time or walk pace.' };
   }
-  if (runSpeedKm <= walkSpeedKm) {
+  if (walkInterval > 0 && runSpeedKm <= walkSpeedKm) {
     return { error: 'The required run pace is slower than your walk pace. Try a shorter goal time.' };
   }
 
@@ -168,7 +171,7 @@ export function calcRequiredRunPace({ totalKm, goalMin, walkSpeedKm, intervalTyp
 
 // Mode: find finish time given both paces
 export function calcFinishTime({ totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval }) {
-  if (runSpeedKm <= walkSpeedKm) {
+  if (walkInterval > 0 && runSpeedKm <= walkSpeedKm) {
     return { error: 'Run pace must be faster than walk pace.' };
   }
   const results = buildResults(totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval);
