@@ -174,3 +174,67 @@ export function calcFinishTime({ totalKm, runSpeedKm, walkSpeedKm, intervalType,
   const results = buildResults(totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval);
   return results || { error: 'Calculation error. Please check your inputs.' };
 }
+
+// Multi-segment: chain segments with different jeffing configs
+export function calcMultiSegment(segments) {
+  const segResults = [];
+  for (const seg of segments) {
+    if (seg.runSpeedKm <= seg.walkSpeedKm) {
+      return { error: 'Each segment must have a run pace faster than its walk pace.' };
+    }
+    const res = buildResults(seg.distKm, seg.runSpeedKm, seg.walkSpeedKm, seg.intervalType, seg.runInterval, seg.walkInterval);
+    if (!res) return { error: 'Calculation error. Check your segment inputs.' };
+    segResults.push({ ...res, segDistKm: seg.distKm });
+  }
+
+  let cumTime = 0;
+  let cumDist = 0;
+  let totalRunTime = 0;
+  let totalRunDist = 0;
+  let totalWalkDist = 0;
+  const allSplits = [];
+  const allChartPoints = [];
+
+  for (let i = 0; i < segResults.length; i++) {
+    const res = segResults[i];
+    const { totalMin, runSpeedKm, walkSpeedKm, runFraction, splits, chartPoints, segDistKm } = res;
+
+    const segRunTime = totalMin * runFraction;
+    totalRunTime += segRunTime;
+    totalRunDist += runSpeedKm * segRunTime;
+    totalWalkDist += walkSpeedKm * (totalMin - segRunTime);
+
+    const pts = i === 0 ? chartPoints : chartPoints.slice(1);
+    allChartPoints.push(...pts.map(p => ({ distKm: cumDist + p.distKm, timeMin: cumTime + p.timeMin })));
+    allSplits.push(...splits.map(s => ({ distKm: cumDist + s.distKm, timeMin: cumTime + s.timeMin })));
+
+    cumTime += totalMin;
+    cumDist += segDistKm;
+  }
+
+  // Deduplicate split points at the same distance (segment boundaries)
+  const seen = new Set();
+  const dedupedSplits = allSplits.filter(s => {
+    const key = s.distKm.toFixed(3);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const totalMin = cumTime;
+  const avgSpeedKm = cumDist / totalMin;
+  const runFraction = totalRunTime / totalMin;
+  const avgRunSpeedKm = totalRunDist / totalRunTime;
+  const avgWalkSpeedKm = totalWalkDist / (totalMin - totalRunTime);
+
+  return {
+    totalMin,
+    runSpeedKm: avgRunSpeedKm,
+    walkSpeedKm: avgWalkSpeedKm,
+    avgSpeedKm,
+    runFraction,
+    splits: dedupedSplits,
+    chartPoints: allChartPoints,
+    isMultiSeg: true,
+  };
+}

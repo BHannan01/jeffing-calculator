@@ -18,9 +18,9 @@ function getSplitLabel(distKm, isFinish) {
 
 function StatCard({ label, value, sub, highlight }) {
   return (
-    <div className={`rounded-xl p-4 text-center ${highlight ? 'bg-indigo-50 border border-indigo-100' : 'bg-slate-50 border border-slate-100'}`}>
+    <div className={`rounded-xl p-4 text-center ${highlight ? 'bg-slate-100 border border-slate-200' : 'bg-slate-50 border border-slate-100'}`}>
       <p className="text-xs text-slate-500 mb-1 font-medium uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold ${highlight ? 'text-indigo-700' : 'text-slate-800'}`}>{value}</p>
+      <p className="text-2xl font-bold text-slate-800">{value}</p>
       {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
     </div>
   );
@@ -72,7 +72,7 @@ export default function ResultsPanel({ results, unit, mode }) {
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">
               {mode === 'pace' ? 'Required Run Pace' : 'Projected Finish Time'}
             </p>
-            <p className="text-5xl font-bold text-indigo-600 leading-none">
+            <p className="text-5xl font-bold text-slate-800 leading-none">
               {mode === 'pace'
                 ? speedToDisplayPace(runSpeedKm, unit)
                 : formatMinutes(totalMin, true)}
@@ -86,10 +86,10 @@ export default function ResultsPanel({ results, unit, mode }) {
 
           {/* Interval breakdown pill */}
           <div className="flex gap-2 text-xs">
-            <span className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full font-medium">
+            <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full font-medium">
               {Math.round(runFraction * 100)}% running
             </span>
-            <span className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full font-medium">
+            <span className="bg-stone-100 text-stone-600 px-3 py-1.5 rounded-full font-medium">
               {Math.round((1 - runFraction) * 100)}% walking
             </span>
           </div>
@@ -142,7 +142,7 @@ export default function ResultsPanel({ results, unit, mode }) {
             <Line
               type="monotone"
               dataKey="time"
-              stroke="#4f46e5"
+              stroke="#475569"
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4, fill: '#4f46e5' }}
@@ -153,7 +153,7 @@ export default function ResultsPanel({ results, unit, mode }) {
                 x={d.x}
                 y={d.y}
                 r={4}
-                fill="#4f46e5"
+                fill="#475569"
                 stroke="white"
                 strokeWidth={2}
               />
@@ -186,7 +186,7 @@ export default function ResultsPanel({ results, unit, mode }) {
                 return (
                   <tr
                     key={s.distKm}
-                    className={`border-b border-slate-50 ${isFinish ? 'font-semibold text-indigo-700' : 'text-slate-700'}`}
+                    className={`border-b border-slate-50 ${isFinish ? 'font-bold text-slate-900' : 'text-slate-700'}`}
                   >
                     <td className="py-2.5 pr-6">{getSplitLabel(s.distKm, isFinish)}</td>
                     <td className="text-right py-2.5 pr-6 text-slate-500">{distDisplay}</td>
