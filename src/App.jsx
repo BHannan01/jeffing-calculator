@@ -189,20 +189,20 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-800 text-white shadow-md">
+      <header className="bg-slate-600 text-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight">Jeffing Calculator</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Plan your run/walk intervals for any race</p>
+            <p className="text-slate-200 text-xs mt-0.5">Plan your run/walk intervals for any race</p>
           </div>
 
-          <div className="flex bg-slate-900 rounded-lg p-1 gap-1">
+          <div className="flex bg-slate-700 rounded-lg p-1 gap-1">
             {['km', 'mi'].map(u => (
               <button
                 key={u}
                 onClick={() => handleUnitChange(u)}
                 className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-                  unit === u ? 'bg-white text-slate-800' : 'text-slate-400 hover:text-white'
+                  unit === u ? 'bg-white text-slate-700' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {u}

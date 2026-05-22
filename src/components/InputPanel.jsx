@@ -76,7 +76,7 @@ function SegmentCard({ seg, index, unit, onUpdate, onRemove, canRemove }) {
             onClick={() => onUpdate({ intervalType: t })}
             className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
               seg.intervalType === t
-                ? 'bg-slate-600 text-white border-slate-600'
+                ? 'bg-slate-500 text-white border-slate-500'
                 : 'text-slate-500 border-slate-200 hover:border-slate-400'
             }`}
           >
@@ -133,7 +133,7 @@ export default function InputPanel({
             onClick={() => { if (!multiSeg) setMode(id); }}
             className={`py-4 text-sm font-semibold transition-colors ${i > 0 ? 'border-l border-slate-200' : ''} ${
               !multiSeg && mode === id
-                ? 'bg-slate-700 text-white'
+                ? 'bg-slate-500 text-white'
                 : multiSeg
                 ? 'text-slate-300 cursor-default'
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
@@ -207,7 +207,7 @@ export default function InputPanel({
                     onClick={() => setIntervalType(val)}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       intervalType === val
-                        ? 'bg-slate-600 text-white border-slate-600'
+                        ? 'bg-slate-500 text-white border-slate-500'
                         : 'text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-700'
                     }`}
                   >
@@ -271,7 +271,7 @@ export default function InputPanel({
           <button
             onClick={() => setMultiSeg(!multiSeg)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              multiSeg ? 'bg-slate-600' : 'bg-slate-200'
+              multiSeg ? 'bg-slate-500' : 'bg-slate-200'
             }`}
           >
             <span
@@ -290,7 +290,7 @@ export default function InputPanel({
 
         <button
           onClick={onCalculate}
-          className="w-full py-3.5 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white font-semibold rounded-xl transition-colors text-sm tracking-wide"
+          className="w-full py-3.5 bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white font-semibold rounded-xl transition-colors text-sm tracking-wide"
         >
           Calculate
         </button>
