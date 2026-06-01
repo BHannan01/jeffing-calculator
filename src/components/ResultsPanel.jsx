@@ -1,8 +1,8 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceDot,
+  ResponsiveContainer, ReferenceDot, ReferenceLine,
 } from 'recharts';
-import { formatMinutes, speedToDisplayPace, PRESET_DISTANCES_KM, KM_TO_MILES } from '../utils/calculations';
+import { formatMinutes, speedToDisplayPace, PRESET_DISTANCES_KM, KM_TO_MILES, MILES_TO_KM } from '../utils/calculations';
 
 function getSplitLabel(distKm, isFinish) {
   const eps = 0.05;
@@ -45,8 +45,23 @@ function CustomTooltip({ active, payload, label, unit }) {
   );
 }
 
+function PaceTooltip({ active, payload, label, unit }) {
+  if (!active || !payload?.length) return null;
+  const distLabel = `${Number(label).toFixed(unit === 'mi' ? 2 : 1)} ${unit}`;
+  // pace stored as min/km internally
+  const paceDisplay = unit === 'mi'
+    ? formatMinutes(payload[0].value * MILES_TO_KM)
+    : formatMinutes(payload[0].value);
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm shadow-lg">
+      <p className="text-slate-500 text-xs">{distLabel}</p>
+      <p className="font-bold text-slate-800">{paceDisplay} /{unit}</p>
+    </div>
+  );
+}
+
 export default function ResultsPanel({ results, unit, mode }) {
-  const { totalMin, runSpeedKm, walkSpeedKm, avgSpeedKm, runFraction, splits, chartPoints } = results;
+  const { totalMin, runSpeedKm, walkSpeedKm, avgSpeedKm, runFraction, splits, chartPoints, pacePoints } = results;
 
   const distFn = km => unit === 'mi' ? km * KM_TO_MILES : km;
 
@@ -61,6 +76,22 @@ export default function ResultsPanel({ results, unit, mode }) {
     distKm: s.distKm,
     timeMin: s.timeMin,
   }));
+
+  // Pace pattern chart — pace stored as min/km, x-axis already in display unit
+  const paceData = (pacePoints || []).map(p => ({
+    dist: parseFloat(distFn(p.distKm).toFixed(3)),
+    pace: parseFloat(p.pace.toFixed(4)),
+  }));
+  const runPaceMinKm = runSpeedKm > 0 ? 1 / runSpeedKm : null;
+  const walkPaceMinKm = walkSpeedKm > 0 ? 1 / walkSpeedKm : null;
+  const paceYFormatter = v => {
+    const paceDisp = unit === 'mi' ? v * MILES_TO_KM : v;
+    const s = Math.round(paceDisp * 60);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+  // Y-axis domain: give a little breathing room around run and walk pace
+  const paceMin = runPaceMinKm ? runPaceMinKm * 0.85 : 0;
+  const paceMax = walkPaceMinKm ? walkPaceMinKm * 1.1 : (runPaceMinKm ? runPaceMinKm * 1.5 : 1);
 
   return (
     <div className="space-y-4">
@@ -121,10 +152,53 @@ export default function ResultsPanel({ results, unit, mode }) {
       </div>
 
       {/* Chart */}
+      {/* Pace pattern chart */}
+      {paceData.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-sm font-semibold text-slate-700 mb-1">Pace Pattern</h3>
+          <p className="text-xs text-slate-400 mb-4">How your pace alternates between running and walking</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={paceData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="dist"
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                tickFormatter={v => `${Number(v).toFixed(unit === 'mi' ? 1 : 0)}${unit}`}
+              />
+              <YAxis
+                domain={[paceMin, paceMax]}
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                tickFormatter={paceYFormatter}
+                width={50}
+                reversed
+              />
+              <Tooltip content={<PaceTooltip unit={unit} />} />
+              {runPaceMinKm && (
+                <ReferenceLine y={runPaceMinKm} stroke="#94a3b8" strokeDasharray="4 2"
+                  label={{ value: 'Run', position: 'insideTopRight', fontSize: 10, fill: '#94a3b8' }} />
+              )}
+              {walkPaceMinKm && (
+                <ReferenceLine y={walkPaceMinKm} stroke="#cbd5e1" strokeDasharray="4 2"
+                  label={{ value: 'Walk', position: 'insideBottomRight', fontSize: 10, fill: '#cbd5e1' }} />
+              )}
+              <Line
+                type="stepAfter"
+                dataKey="pace"
+                stroke="#475569"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 3, fill: '#475569' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Cumulative time chart */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <h3 className="text-sm font-semibold text-slate-700 mb-1">Cumulative Time</h3>
         <p className="text-xs text-slate-400 mb-4">How your time builds across the distance</p>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis

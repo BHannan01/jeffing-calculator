@@ -185,7 +185,35 @@ function buildResults(totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterva
     }
   }
 
-  return { totalMin, runSpeedKm, walkSpeedKm, avgSpeedKm, runFraction, splits, chartPoints };
+  // Pace pattern: step-function points showing pace at each run/walk transition
+  // pace stored in min/km internally; chart converts for display unit
+  const runPaceMinKm = 1 / runSpeedKm;
+  const walkPaceMinKm = walkInterval > 0 ? 1 / walkSpeedKm : runPaceMinKm;
+  const pacePoints = [];
+  let pp = 0;
+
+  if (intervalType === 'time') {
+    const runDistPerCycle = runSpeedKm * runInterval;
+    const walkDistPerCycle = walkInterval > 0 ? walkSpeedKm * walkInterval : 0;
+    while (pp < totalKm - 0.0001) {
+      pacePoints.push({ distKm: pp, pace: runPaceMinKm });
+      const runEnd = Math.min(pp + runDistPerCycle, totalKm);
+      if (walkInterval === 0 || runEnd >= totalKm - 0.0001) { pp = totalKm; break; }
+      pacePoints.push({ distKm: runEnd, pace: walkPaceMinKm });
+      pp = Math.min(runEnd + walkDistPerCycle, totalKm);
+    }
+  } else {
+    while (pp < totalKm - 0.0001) {
+      pacePoints.push({ distKm: pp, pace: runPaceMinKm });
+      const runEnd = Math.min(pp + runInterval, totalKm);
+      if (walkInterval === 0 || runEnd >= totalKm - 0.0001) { pp = totalKm; break; }
+      pacePoints.push({ distKm: runEnd, pace: walkPaceMinKm });
+      pp = Math.min(runEnd + walkInterval, totalKm);
+    }
+  }
+  pacePoints.push({ distKm: totalKm, pace: pacePoints[pacePoints.length - 1]?.pace ?? runPaceMinKm });
+
+  return { totalMin, runSpeedKm, walkSpeedKm, avgSpeedKm, runFraction, splits, chartPoints, pacePoints };
 }
 
 // Mode: find required run pace given goal time
@@ -245,10 +273,11 @@ export function calcMultiSegment(segments) {
   let totalWalkDist = 0;
   const allSplits = [];
   const allChartPoints = [];
+  const allPacePoints = [];
 
   for (let i = 0; i < segResults.length; i++) {
     const res = segResults[i];
-    const { totalMin, runSpeedKm, walkSpeedKm, runFraction, splits, chartPoints, segDistKm } = res;
+    const { totalMin, runSpeedKm, walkSpeedKm, runFraction, splits, chartPoints, pacePoints, segDistKm } = res;
 
     const segRunTime = totalMin * runFraction;
     totalRunTime += segRunTime;
@@ -258,6 +287,8 @@ export function calcMultiSegment(segments) {
     const pts = i === 0 ? chartPoints : chartPoints.slice(1);
     allChartPoints.push(...pts.map(p => ({ distKm: cumDist + p.distKm, timeMin: cumTime + p.timeMin })));
     allSplits.push(...splits.map(s => ({ distKm: cumDist + s.distKm, timeMin: cumTime + s.timeMin })));
+    const ppSlice = i === 0 ? pacePoints : pacePoints.slice(1);
+    allPacePoints.push(...ppSlice.map(p => ({ distKm: cumDist + p.distKm, pace: p.pace })));
 
     cumTime += totalMin;
     cumDist += segDistKm;
@@ -286,6 +317,7 @@ export function calcMultiSegment(segments) {
     runFraction,
     splits: dedupedSplits,
     chartPoints: allChartPoints,
+    pacePoints: allPacePoints,
     isMultiSeg: true,
   };
 }
