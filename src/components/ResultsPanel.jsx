@@ -139,12 +139,12 @@ export default function ResultsPanel({ results, unit, mode }) {
             />
             <Tooltip content={<CustomTooltip unit={unit} />} />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="time"
               stroke="#475569"
-              strokeWidth={2.5}
+              strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#4f46e5' }}
+              activeDot={{ r: 4, fill: '#475569' }}
             />
             {splitDots.map(d => (
               <ReferenceDot

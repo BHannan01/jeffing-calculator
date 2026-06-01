@@ -129,13 +129,61 @@ function buildResults(totalKm, runSpeedKm, walkSpeedKm, intervalType, runInterva
     timeMin: timeAtDistKm(d, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval),
   }));
 
-  // ~300 chart points for smooth line
-  const nPoints = Math.min(300, Math.ceil(totalKm * 20));
-  const step = totalKm / nPoints;
-  const chartPoints = Array.from({ length: nPoints + 1 }, (_, i) => {
-    const d = Math.min(i * step, totalKm);
-    return { distKm: d, timeMin: timeAtDistKm(d, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval) };
-  });
+  // Generate points at every run/walk boundary so the chart shows actual slope changes
+  const chartPoints = [{ distKm: 0, timeMin: 0 }];
+  let cumDist = 0;
+  let cumTime = 0;
+
+  if (intervalType === 'time') {
+    const runDistPerCycle = runSpeedKm * runInterval;
+    const walkDistPerCycle = walkInterval > 0 ? walkSpeedKm * walkInterval : 0;
+    const distPerCycle = runDistPerCycle + walkDistPerCycle;
+    const estCycles = distPerCycle > 0 ? Math.ceil(totalKm / distPerCycle) : 0;
+
+    if (estCycles > 800) {
+      // Too many cycles to show individually — fall back to uniform sampling
+      const n = 400;
+      for (let i = 1; i <= n; i++) {
+        const d = Math.min(i * totalKm / n, totalKm);
+        chartPoints.push({ distKm: d, timeMin: timeAtDistKm(d, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval) });
+      }
+    } else {
+      while (cumDist < totalKm - 0.0001) {
+        const runEnd = Math.min(cumDist + runDistPerCycle, totalKm);
+        cumTime += (runEnd - cumDist) / runSpeedKm;
+        cumDist = runEnd;
+        chartPoints.push({ distKm: cumDist, timeMin: cumTime });
+        if (cumDist >= totalKm - 0.0001 || walkInterval === 0) break;
+        const walkEnd = Math.min(cumDist + walkDistPerCycle, totalKm);
+        cumTime += (walkEnd - cumDist) / walkSpeedKm;
+        cumDist = walkEnd;
+        chartPoints.push({ distKm: cumDist, timeMin: cumTime });
+      }
+    }
+  } else {
+    const cycleDist = runInterval + (walkInterval > 0 ? walkInterval : 0);
+    const estCycles = cycleDist > 0 ? Math.ceil(totalKm / cycleDist) : 0;
+
+    if (estCycles > 800) {
+      const n = 400;
+      for (let i = 1; i <= n; i++) {
+        const d = Math.min(i * totalKm / n, totalKm);
+        chartPoints.push({ distKm: d, timeMin: timeAtDistKm(d, runSpeedKm, walkSpeedKm, intervalType, runInterval, walkInterval) });
+      }
+    } else {
+      while (cumDist < totalKm - 0.0001) {
+        const runEnd = Math.min(cumDist + runInterval, totalKm);
+        cumTime += (runEnd - cumDist) / runSpeedKm;
+        cumDist = runEnd;
+        chartPoints.push({ distKm: cumDist, timeMin: cumTime });
+        if (cumDist >= totalKm - 0.0001 || walkInterval === 0) break;
+        const walkEnd = Math.min(cumDist + walkInterval, totalKm);
+        cumTime += (walkEnd - cumDist) / walkSpeedKm;
+        cumDist = walkEnd;
+        chartPoints.push({ distKm: cumDist, timeMin: cumTime });
+      }
+    }
+  }
 
   return { totalMin, runSpeedKm, walkSpeedKm, avgSpeedKm, runFraction, splits, chartPoints };
 }
